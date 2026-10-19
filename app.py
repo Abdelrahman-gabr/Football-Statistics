@@ -86,7 +86,7 @@ st.markdown(
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def load_yolo_model():
-    return YOLO("best.pt")
+    return YOLO("Version3_results/weights/best.pt")
 
 
 try:
