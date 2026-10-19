@@ -5,6 +5,7 @@ import numpy as np
 import streamlit as st
 from ultralytics import YOLO
 from sklearn.cluster import KMeans
+from moviepy.editor import VideoFileClip
 
 # -----------------------------------------------------------------------------
 # 1. PAGE CONFIGURATION & THEME STYLING
@@ -135,10 +136,6 @@ def get_clean_jersey_color(frame, box):
 
 
 def process_football_video(input_video_path, output_video_path, progress_bar, status_text):
-    # Ensure output uses .mp4 container for universal server/browser compatibility
-    if output_video_path.endswith(".webm"):
-        output_video_path = output_video_path.replace(".webm", ".mp4")
-
     cap = cv2.VideoCapture(input_video_path)
 
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -148,7 +145,7 @@ def process_football_video(input_video_path, output_video_path, progress_bar, st
     if total_frames <= 0:
         total_frames = 100
 
-    # Use mp4v codec which is universally supported by OpenCV on Linux/Windows servers
+    # Write raw frames using mp4v
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_video_path, fourcc, fps if fps > 0 else 30, (width, height))
 
@@ -278,7 +275,27 @@ def process_football_video(input_video_path, output_video_path, progress_bar, st
 
     cap.release()
     out.release()
-    return team_a_pct, team_b_pct, output_video_path
+
+    status_text.text("🔄 Transcoding video for browser playback...")
+    
+    # Transcode OpenCV video to browser-compatible H.264 using MoviePy
+    web_compatible_path = output_video_path.replace(".mp4", "_web.mp4")
+    try:
+        clip = VideoFileClip(output_video_path)
+        clip.write_videofile(
+            web_compatible_path, 
+            codec='libx264', 
+            audio_codec='aac', 
+            logger=None, 
+            preset='fast'
+        )
+        clip.close()
+        final_video_path = web_compatible_path
+    except Exception:
+        # Fallback if transcoding encounters any environment issues
+        final_video_path = output_video_path
+
+    return team_a_pct, team_b_pct, final_video_path
 
 
 # -----------------------------------------------------------------------------
@@ -302,18 +319,18 @@ with col_upload:
         input_video_path = tfile.name
 
         if st.button("🚀 Run AI Tracking & Possession Pipeline"):
-            output_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".webm")
+            output_temp = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
             output_video_path = output_temp.name
-
+        
             st.markdown("---")
             progress_bar = st.progress(0.0)
             status_text = st.empty()
-
+        
             try:
                 ta_res, tb_res, final_vid_path = process_football_video(
                     input_video_path, output_video_path, progress_bar, status_text
                 )
-                status_text.text("✅ Processing complete successfully!")
+                status_text.text("✅ Processing & Transcoding complete!")
                 st.session_state["processed_video"] = final_vid_path
                 st.session_state["team_a_res"] = ta_res
                 st.session_state["team_b_res"] = tb_res
