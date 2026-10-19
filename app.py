@@ -343,7 +343,11 @@ with col_display:
 
     if "processed_video" in st.session_state:
         st.markdown("#### Annotated Video Output")
-        st.video(st.session_state["processed_video"])
+        
+        # Read the video file bytes and render with explicit format
+        video_file = open(st.session_state["processed_video"], "rb")
+        video_bytes = video_file.read()
+        st.video(video_bytes, format="video/mp4")
 
         m1, m2 = st.columns(2)
         with m1:
@@ -358,13 +362,13 @@ with col_display:
             )
 
         st.markdown("<br>", unsafe_allow_html=True)
-        with open(st.session_state["processed_video"], "rb") as f:
-            st.download_button(
-                label="📥 Download Processed Match Video",
-                data=f,
-                file_name="PitchIQ_Analyzed_Match.webm",
-                mime="video/webm",
-            )
+        st.download_button(
+            label="📥 Download Processed Match Video",
+            data=video_bytes,
+            file_name="PitchIQ_Analyzed_Match.mp4",
+            mime="video/mp4",
+            use_container_width=True
+        )
     else:
         st.info("Awaiting video upload and execution. Upload your match clip to generate tracking overlays and analytics.")
         m1, m2 = st.columns(2)
