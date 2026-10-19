@@ -4,3 +4,4 @@ numpy
 ultralytics
 scikit-learn
 lap
+moviepy
