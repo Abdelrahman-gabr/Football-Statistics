@@ -135,9 +135,9 @@ def get_clean_jersey_color(frame, box):
 
 
 def process_football_video(input_video_path, output_video_path, progress_bar, status_text):
-    # Use WebM container with VP80 codec for safe browser compatibility without extra DLLs
-    if output_video_path.endswith(".mp4"):
-        output_video_path = output_video_path.replace(".mp4", ".webm")
+    # Ensure output uses .mp4 container for universal server/browser compatibility
+    if output_video_path.endswith(".webm"):
+        output_video_path = output_video_path.replace(".webm", ".mp4")
 
     cap = cv2.VideoCapture(input_video_path)
 
@@ -148,14 +148,9 @@ def process_football_video(input_video_path, output_video_path, progress_bar, st
     if total_frames <= 0:
         total_frames = 100
 
-    fourcc = cv2.VideoWriter_fourcc(*'VP80')
+    # Use mp4v codec which is universally supported by OpenCV on Linux/Windows servers
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(output_video_path, fourcc, fps if fps > 0 else 30, (width, height))
-    
-    if not out.isOpened():
-        # Fallback to mp4v if VP80 fails
-        output_video_path = output_video_path.replace(".webm", ".mp4")
-        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-        out = cv2.VideoWriter(output_video_path, fourcc, fps if fps > 0 else 30, (width, height))
 
     status_text.text("🔍 Phase 1/2: Collecting robust jersey color samples...")
     color_samples = []
@@ -286,8 +281,6 @@ def process_football_video(input_video_path, output_video_path, progress_bar, st
     return team_a_pct, team_b_pct, output_video_path
 
 
-# -----------------------------------------------------------------------------
-# 4. SINGLE-PAGE CLEAN MODERN INTERFACE
 # -----------------------------------------------------------------------------
 st.markdown("# ⚽ PitchIQ Analytics Suite")
 st.markdown(
